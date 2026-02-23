@@ -1,0 +1,90 @@
+workflows:
+
+  # ─── iOS App Store build ────────────────────────────────────────────────────
+  ios-release:
+    name: Tambola Now — iOS Release
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: 16.2
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store        # or 'ad_hoc' for TestFlight testing
+        bundle_identifier: com.tambolanow.app
+      vars:
+        BUNDLE_ID: com.tambolanow.app
+        APP_STORE_APPLE_ID: 1234567890      # ← replace with your App Store Connect app ID
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm install
+
+      - name: Install CocoaPods
+        script: cd ios/App && pod install
+
+      - name: Set app version
+        script: |
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+        working_directory: ios/App
+
+      - name: Build & archive
+        script: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath $CM_BUILD_DIR/App.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=$CM_TEAM_ID
+
+      - name: Export IPA
+        script: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath $CM_BUILD_DIR/App.xcarchive \
+            -exportPath $CM_BUILD_DIR/export \
+            -exportOptionsPlist ios/ExportOptions.plist
+
+    artifacts:
+      - $CM_BUILD_DIR/export/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY      # set in Codemagic env vars
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true                   # auto-submit to TestFlight
+
+  # ─── iOS Simulator build (quick test, no signing needed) ────────────────────
+  ios-debug:
+    name: Tambola Now — iOS Debug (Simulator)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: 16.2
+      cocoapods: default
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm install
+
+      - name: Install CocoaPods
+        script: cd ios/App && pod install
+
+      - name: Build for simulator
+        script: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath $CM_BUILD_DIR/DerivedData \
+            build
+
+    artifacts:
+      - $CM_BUILD_DIR/DerivedData/**/*.app
