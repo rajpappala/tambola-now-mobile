@@ -1,0 +1,20 @@
+{
+  "name": "tambola-now-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sync": "cap sync",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android",
+    "build:web": "cd ../progressbar/mygame && npm run build && cp -r dist ../../tambola-now-mobile/www",
+    "deploy:ios": "npm run build:web && cap sync ios && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@capacitor/android": "^7.0.0"
+  }
+}
