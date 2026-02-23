@@ -10,7 +10,7 @@ workflows:
       xcode: 16.2
       cocoapods: default
       ios_signing:
-        distribution_type: app_store        # or 'ad_hoc' for TestFlight testing
+        distribution_type: app_store
         bundle_identifier: com.tambolanow.app
       vars:
         BUNDLE_ID: com.tambolanow.app
@@ -19,6 +19,12 @@ workflows:
     scripts:
       - name: Install npm dependencies
         script: npm install
+
+      - name: Create www folder and sync Capacitor
+        script: |
+          mkdir -p www
+          echo "<html><body></body></html>" > www/index.html
+          npx cap sync ios
 
       - name: Install CocoaPods
         script: cd ios/App && pod install
@@ -54,10 +60,10 @@ workflows:
 
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY      # set in Codemagic env vars
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true                   # auto-submit to TestFlight
+        submit_to_testflight: true
 
   # ─── iOS Simulator build (quick test, no signing needed) ────────────────────
   ios-debug:
@@ -72,6 +78,12 @@ workflows:
     scripts:
       - name: Install npm dependencies
         script: npm install
+
+      - name: Create www folder and sync Capacitor
+        script: |
+          mkdir -p www
+          echo "<html><body></body></html>" > www/index.html
+          npx cap sync ios
 
       - name: Install CocoaPods
         script: cd ios/App && pod install
